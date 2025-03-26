@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pneumonia Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Pneumonia Detection from X-rays</h1>
+        <form action="/" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <button type="submit">Upload & Predict</button>
+        </form>
+
+        {% if image_path %}
+        <h2>Prediction: {{ prediction }}</h2>
+        <p>Confidence: {{ confidence }}</p>
+
+        <div class="images">
+            <div class="image-container">
+                <h3>Original X-ray</h3>
+                <img src="{{ image_path }}" alt="Uploaded Image">
+            </div>
+            <div class="image-container">
+                <h3>Grad-CAM Heatmap</h3>
+                <img src="{{ heatmap_path }}" alt="Heatmap">
+            </div>
+        </div>
+        
+        {% endif %}
+    </div>
+</body>
+</html>
