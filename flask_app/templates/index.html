@@ -3,33 +3,311 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pneumonia Detection</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>PneumoScan | AI-Powered Pneumonia Detection</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --danger-color: #f72585;
+            --success-color: #1751ff;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --gray-color: #6c757d;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .app-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .app-subtitle {
+            font-size: 1rem;
+            color: var(--gray-color);
+        }
+
+        .form-container {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        /* Update the file upload section styles */
+        .file-upload {
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .file-upload-label {
+            display: block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .file-upload-label:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .file-upload-label i {
+            margin-right: 8px;
+        }
+
+        #file-upload {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .analyze-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .result-container {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 25px;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .confidence-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .confidence-badge.positive {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger-color);
+        }
+
+        .confidence-badge.negative {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: var(--success-color);
+        }
+
+        .diagnosis-result {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .diagnosis-result h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .diagnosis-result h2.positive {
+            color: var(--danger-color);
+        }
+
+        .diagnosis-result h2.negative {
+            color: var(--success-color);
+        }
+
+        .image-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .image-box {
+            flex: 1;
+        }
+
+        .image-box h3 {
+            font-size: 1rem;
+            color: var(--gray-color);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .xray-image {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            background-color: #f0f0f0;
+            border-radius: var(--border-radius);
+        }
+
+        .download-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .download-btn i {
+            margin-right: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .image-row {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Pneumonia Detection from X-rays</h1>
+    <div class="app-header">
+        <h1 class="app-title">PneumoScan</h1>
+        <p class="app-subtitle">AI-powered Pneumonia Detection from Chest X-rays</p>
+    </div>
+
+    <div class="form-container">
+        <h2>Patient Information</h2>
         <form action="/" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" required>
-            <button type="submit">Upload & Predict</button>
-        </form>
-
-        {% if image_path %}
-        <h2>Prediction: {{ prediction }}</h2>
-        <p>Confidence: {{ confidence }}</p>
-
-        <div class="images">
-            <div class="image-container">
-                <h3>Original X-ray</h3>
-                <img src="{{ image_path }}" alt="Uploaded Image">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Enter patient name" required>
+                </div>
+                <div class="form-group">
+                    <label for="age">Age</label>
+                    <input type="number" id="age" name="age" placeholder="Age" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone" placeholder="Phone number" required>
+                </div>
             </div>
-            <div class="image-container">
-                <h3>Grad-CAM Heatmap</h3>
-                <img src="{{ heatmap_path }}" alt="Heatmap">
+            
+            <div class="file-upload">
+                <label for="file-upload" class="file-upload-label">
+                    <i class="fas fa-cloud-upload-alt"></i> Choose X-ray Image
+                </label>
+                <input type="file" id="file-upload" name="file" accept="image/*" required>
+            </div>
+            
+            <button type="submit" class="analyze-btn">
+                Analyze X-ray
+            </button>
+        </form>
+    </div>
+
+    {% if image_path %}
+    <div class="result-container">
+        <div class="result-header">
+            <h2>Diagnosis Result</h2>
+            <div class="confidence-badge {{ 'positive' if prediction == 'Pneumonia Detected' else 'negative' }}">
+                {{ confidence }}
             </div>
         </div>
         
-        {% endif %}
+        <div class="diagnosis-result">
+            <h2 class="{{ 'positive' if prediction == 'Pneumonia Detected' else 'negative' }}">
+                {{ prediction }}
+            </h2>
+        </div>
+        
+        <div class="image-row">
+            <div class="image-box">
+                <h3>Original X-ray</h3>
+                <img src="{{ image_path }}" alt="Uploaded X-ray" class="xray-image">
+            </div>
+            <div class="image-box">
+                <h3>AI Heatmap</h3>
+                <img src="{{ heatmap_path }}" alt="AI Heatmap" class="xray-image">
+            </div>
+        </div>
+        
+        <div class="download-section">
+            <a href="/download_report?name={{ patient_name }}&age={{ patient_age }}&phone={{ patient_phone }}&diagnosis={{ prediction }}&confidence={{ confidence }}&xray_path={{ image_path }}&heatmap_path={{ heatmap_path }}" 
+               class="download-btn">
+                <i class="fas fa-download"></i> Download PDF Report
+            </a>
+        </div>
     </div>
+    {% endif %}
 </body>
 </html>
