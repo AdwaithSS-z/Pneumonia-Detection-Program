@@ -41,7 +41,7 @@ class PneumoniaDetector(nn.Module):
 
 # Instantiate and load model
 model = PneumoniaDetector().to(device)
-model.load_state_dict(torch.load("pneumonia_efnetv2s_cropped.pth", map_location=device))
+model.load_state_dict(torch.load("pneumonia_efnetv2s_best.pth", map_location=device))
 model.eval()
 
 # Image transformations
