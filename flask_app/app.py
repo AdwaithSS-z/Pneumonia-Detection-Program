@@ -27,7 +27,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # Check for GPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load the trained model
+# Load the trained pneumonia detection model (PneumoniaDetector)
 class PneumoniaDetector(nn.Module):
     def __init__(self, num_classes=1):
         super(PneumoniaDetector, self).__init__()
@@ -39,10 +39,25 @@ class PneumoniaDetector(nn.Module):
         x = self.model(x)
         return self.sigmoid(x)
 
-# Instantiate and load model
+# Instantiate and load pneumonia detection model
 model = PneumoniaDetector().to(device)
-model.load_state_dict(torch.load("pneumonia_efnetv2s_cropped.pth", map_location=device))
+model.load_state_dict(torch.load("pneumonia_efnetv2s_best.pth", map_location=device))
 model.eval()
+
+# Load the pre-trained Grad-CAM model (efnetv2_best.pth)
+class GradCAMModel(nn.Module):
+    def __init__(self, num_classes=1):
+        super(GradCAMModel, self).__init__()
+        # Load EfficientNet V2 model for Grad-CAM
+        self.model = models.efficientnet_v2_s(weights=models.EfficientNet_V2_S_Weights.IMAGENET1K_V1)
+        self.model.classifier[1] = nn.Linear(self.model.classifier[1].in_features, num_classes)  # Modify for 2 classes (Pneumonia / No Pneumonia)
+
+    def forward(self, x):
+        return self.model(x)
+
+gradcam_model = GradCAMModel().to(device)
+gradcam_model.load_state_dict(torch.load("pneumonia_efnetv2s_cropped.pth", map_location=device))
+gradcam_model.eval()
 
 # Image transformations
 transform = transforms.Compose([
@@ -51,12 +66,13 @@ transform = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# Function to generate Grad-CAM heatmap
+# Function to generate Grad-CAM heatmap using the efnetv2_best model
 def generate_gradcam(image_path):
     image = Image.open(image_path).convert("RGB")
     image_tensor = transform(image).unsqueeze(0).to(device)
 
-    target_layer = model.model.features[-1]  
+    # Use the Grad-CAM model to generate the heatmap
+    target_layer = gradcam_model.model.features[-1]  # Last convolutional layer of EfficientNet V2
 
     activations, gradients = None, None
 
@@ -71,8 +87,8 @@ def generate_gradcam(image_path):
     forward_handle = target_layer.register_forward_hook(forward_hook)
     backward_handle = target_layer.register_full_backward_hook(backward_hook)
 
-    output = model(image_tensor)
-    model.zero_grad()
+    output = gradcam_model(image_tensor)
+    gradcam_model.zero_grad()
     output.backward()
 
     forward_handle.remove()
@@ -84,13 +100,13 @@ def generate_gradcam(image_path):
     weights = np.mean(gradients, axis=(2, 3))
     cam = np.sum(weights[:, :, None, None] * activations, axis=1)[0]
 
-    cam = np.maximum(cam, 0)  
-    cam = cam / np.max(cam)  
+    cam = np.maximum(cam, 0)
+    cam = cam / np.max(cam)
 
     img_cv = cv2.imread(image_path)
-    original_size = (img_cv.shape[1], img_cv.shape[0])  
+    original_size = (img_cv.shape[1], img_cv.shape[0])
 
-    cam = cv2.resize(cam, original_size)  
+    cam = cv2.resize(cam, original_size)
 
     heatmap = cv2.applyColorMap(np.uint8(255 * cam), cv2.COLORMAP_JET)
     overlay = cv2.addWeighted(img_cv, 0.6, heatmap, 0.4, 0)
@@ -155,7 +171,7 @@ def generate_pdf(name, age, phone, diagnosis, confidence, xray_path, heatmap_pat
     c.drawImage(img2, 350, height - 500, width=200, height=200, preserveAspectRatio=True)
     c.drawString(350, height - 510, "Heatmap Analysis")
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(100, height - 540, "Remarks:")
+    c.drawString(100, height - 540, "Remarks:")  # You can add remarks here as needed
     
     # Footer
     c.setFont("Helvetica-Oblique", 10)
@@ -181,11 +197,13 @@ def index():
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
 
+            # Use the PneumoniaDetector model for prediction
             image_tensor = transform(Image.open(filepath).convert("RGB")).unsqueeze(0).to(device)
             output = model(image_tensor)
             prediction = "Pneumonia Detected" if output.item() > 0.5 else "No Pneumonia"
             confidence = f"{output.item() * 100:.2f}%"
 
+            # Use the Grad-CAM model for Grad-CAM heatmap generation
             heatmap_path = generate_gradcam(filepath)
 
             # Save patient data
